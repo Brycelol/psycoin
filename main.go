@@ -12,7 +12,6 @@ import (
 
 var waitGroup sync.WaitGroup
 
-
 func main() {
 
 	secret := os.Getenv("COINBASE_SECRET")
@@ -30,9 +29,8 @@ func main() {
 	waitGroup.Add(1)
 	go priceTicker.Start()
 
-	psyTrader := trader.PsyTrader{TickChannel: tickChannel}
 	waitGroup.Add(1)
-	go psyTrader.Start()
+	go trader.Trade(tickChannel)
 
 	waitGroup.Wait()
 }
