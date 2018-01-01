@@ -1,10 +1,38 @@
 package main
 
 import (
-	"github.com/brycelol/psycoin/gdax"
+	"net/http"
+	"time"
+	"github.com/preichenberger/go-gdax"
+	"os"
+	"github.com/brycelol/psycoin/ticker"
+	"github.com/brycelol/psycoin/trader"
+	"sync"
 )
 
+var waitGroup sync.WaitGroup
+
+
 func main() {
-	priceTicker := gdax.BTCPriceTicker{PriceChannel: make(chan gdax.PriceTick, 60)}
-	priceTicker.Start()
+
+	secret := os.Getenv("COINBASE_SECRET")
+	key := os.Getenv("COINBASE_KEY")
+	passphrase := os.Getenv("COINBASE_PASSPHRASE")
+
+	client := gdax.NewClient(secret, key, passphrase)
+	client.HttpClient = &http.Client{
+		Timeout: 15 * time.Second,
+	}
+
+	tickChannel := make(chan ticker.PriceTick, 60)
+
+	priceTicker := ticker.BTCPriceTicker{TickChannel: tickChannel}
+	waitGroup.Add(1)
+	go priceTicker.Start()
+
+	psyTrader := trader.PsyTrader{TickChannel: tickChannel}
+	waitGroup.Add(1)
+	go psyTrader.Start()
+
+	waitGroup.Wait()
 }
